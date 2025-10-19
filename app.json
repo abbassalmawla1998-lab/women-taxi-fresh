@@ -81,14 +81,14 @@
         "origin": "https://bellaride.com/"
       },
       "eas": {
-        "projectId": "2832cd6a-963d-4eab-8c7a-9cc81f938cc1"
+        "projectId": ""
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/2832cd6a-963d-4eab-8c7a-9cc81f938cc1"
+      "url": "https://u.expo.dev/"
     }
   }
 }
