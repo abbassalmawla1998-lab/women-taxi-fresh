@@ -11,6 +11,8 @@ import {
   Alert,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '@/constants/config';
 import { 
   Search, 
   Navigation, 
@@ -43,6 +45,16 @@ const rideId = 4;
   const [mapLayer, setMapLayer] = useState<'street' | 'satellite' | 'terrain'>('street');
   const [showLayerMenu, setShowLayerMenu] = useState(false);
   const [hasActiveRide, setHasActiveRide] = useState(false);
+
+    
+    const [timeRemaining, setTimeRemaining] = useState(5 * 60);
+    const [rideStatus, setRideStatus] = useState<'searching' | 'driver_assigned' | 'arriving' | 'picked_up'>('driver_assigned');
+    const [driver, setDriver] = useState<any | null>(null);
+    const [ride, setRide] = useState<any | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [elapsedTime, setElapsedTime] = useState(0);
+    const [timerStartTime, setTimerStartTime] = useState<Date | null>(null);
+    const placeholderPhoto = 'https://via.placeholder.com/150';
 
   const { user } = useUser();
   const { 
@@ -102,6 +114,55 @@ const rideId = 4;
     })();
   }, [setUserLocation]);
 
+  const fetchLiveRide = async () => {
+  try {
+    const authToken = await AsyncStorage.getItem('token');
+    const response = await fetch(`${API_BASE_URL}/rides/live`, {
+      headers: {
+        'Accept': 'application/json',
+        'content-type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+      },
+    });
+    const data = await response.json();
+    const liveRide = data.data;
+    setRide(liveRide);
+    setDriver(liveRide.driver?.user || null);
+
+    // Show ride on map if WebView is ready
+    showRideOnMap(liveRide);
+
+    // Update ride status
+    switch (liveRide.status) {
+      case 'pending':
+      case 'accepted':
+        setRideStatus('driver_assigned');
+        break;
+      case 'in_progress':
+        setRideStatus('picked_up');
+        break;
+      case 'arrived':
+        setRideStatus('arriving');
+        break;
+      default:
+        setRideStatus('driver_assigned');
+    }
+
+    // Reset timer if status changed or ride is newly created
+    const createdAt = new Date(liveRide.timestamps.created_at);
+    if (!timerStartTime || liveRide.status !== ride?.status) {
+      setTimerStartTime(createdAt);
+      setElapsedTime(Math.floor((new Date().getTime() - createdAt.getTime()) / 1000));
+    }
+  } catch (error) {
+    console.error('Failed to fetch live ride:', error);
+    Alert.alert('Error', 'Could not load live ride. Please try again later.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   // Add markers when selectedPlace changes
   useEffect(() => {
     if (selectedPlace && webViewRef.current) {
@@ -132,6 +193,53 @@ const rideId = 4;
     }
   }, [currentRoute, routeStart, routeEnd]);
 
+const showRideOnMap = (rideData: any) => {
+  if (!webViewRef.current || !rideData) return;
+
+  const driverLocation = rideData.driver?.location || rideData.driver?.user?.location;
+  const destination = rideData.destination;
+
+  if (!driverLocation || !destination) return;
+
+  // Add/update driver marker
+  webViewRef.current.postMessage(
+    JSON.stringify({
+      type: 'addMarker',
+      id: 'driver',
+      lat: driverLocation.lat,
+      lng: driverLocation.lng,
+      title: 'Driver',
+      description: driverLocation.name || 'Driver Location',
+      color: '#007AFF',
+    })
+  );
+
+  // Add/update destination marker
+  webViewRef.current.postMessage(
+    JSON.stringify({
+      type: 'addMarker',
+      id: 'destination',
+      lat: destination.lat,
+      lng: destination.lng,
+      title: 'Destination',
+      description: destination.address || 'Destination',
+      color: '#9C27B0',
+    })
+  );
+
+  // Center map between driver and destination
+  const centerLat = (driverLocation.lat + destination.lat) / 2;
+  const centerLng = (driverLocation.lng + destination.lng) / 2;
+
+  webViewRef.current.postMessage(
+    JSON.stringify({
+      type: 'setView',
+      lat: centerLat,
+      lng: centerLng,
+      zoom: 13,
+    })
+  );
+};
 
 
 useEffect(() => {
