@@ -8,12 +8,12 @@
         "exclude": [
           "@pusher/pusher-websocket-react-native"
         ]
-      },
-      "install": {
-        "exclude": [
-          "@types/react"
-        ]
       }
+    },
+    "install": {
+      "exclude": [
+        "@types/react"
+      ]
     }
   },
   "scripts": {
