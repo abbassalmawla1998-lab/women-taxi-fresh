@@ -8,9 +8,9 @@ import {
   Alert,
   Linking,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ScrollView } from 'react-native';
 import {
   X,
   Phone,
@@ -167,7 +167,6 @@ export default function ActiveRideScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-
       <View style={styles.header}>
         <TouchableOpacity style={styles.emergencyButton}>
           <AlertCircle size={24} color="#FF3B30" />
@@ -289,15 +288,12 @@ export default function ActiveRideScreen() {
           <Text style={styles.fareLabel}>Estimated Fare</Text>
           <Text style={styles.fareValue}>{ride?.fare ?? '45,000 LBP'}</Text>
         </View>
-        <TouchableOpacity
-  style={styles.trackButton}
-  onPress={() => router.push('/(client)/home')} // Navigate to home page
->
-  <LinearGradient colors={['#007AFF', '#0051D5']} style={styles.trackGradient}>
-    <Navigation size={20} color="white" />
-    <Text style={styles.trackButtonText}>Track on Map</Text>
-  </LinearGradient>
-</TouchableOpacity>
+        <TouchableOpacity style={styles.trackButton}>
+          <LinearGradient colors={['#007AFF', '#0051D5']} style={styles.trackGradient}>
+            <Navigation size={20} color="white" />
+            <Text style={styles.trackButtonText}>Track on Map</Text>
+          </LinearGradient>
+        </TouchableOpacity>
       </View>
       </ScrollView>
     </SafeAreaView>
